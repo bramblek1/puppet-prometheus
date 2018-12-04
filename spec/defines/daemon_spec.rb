@@ -18,7 +18,7 @@ describe 'prometheus::daemon' do
       [
         {
           version:           '1.2.3',
-          real_download_url: 'https://github.com/prometheus/smurf_exporter/releases/v1.2.3/smurf_exporter-1.2.3.any.tar.gz',
+          real_download_url: 'file:///opt/assets/smurf_exporter-1.2.3.any.tar.gz',
           notify_service:    'Service[smurf_exporter]',
           user:              'smurf_user',
           group:             'smurf_group',
