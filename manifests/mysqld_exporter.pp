@@ -97,7 +97,7 @@ class prometheus::mysqld_exporter (
   Stdlib::Port $cnf_port,
   String $cnf_user,
   String $download_extension,
-  Variant[Stdlib::HTTPSUrl, Stdlib::HTTPUrl] $download_url_base,
+  Optional[Stdlib::Filesource] $download_url_base,
   Array $extra_groups,
   String $group,
   String $package_ensure,
