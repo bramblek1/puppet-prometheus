@@ -16,10 +16,11 @@ describe 'prometheus' do
           # prometheus::install
           it {
             is_expected.to contain_file('/var/lib/prometheus').with(
-              'ensure' => 'directory',
-              'owner'  => 'prometheus',
-              'group'  => 'prometheus',
-              'mode'   => '0755'
+              'ensure'  => 'directory',
+              'owner'   => 'prometheus',
+              'group'   => 'prometheus',
+              'recurse' => true,
+              'mode'    => 'ug+rwX'
             )
           }
 
