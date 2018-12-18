@@ -92,7 +92,7 @@ class prometheus::process_exporter(
   String $os                                                         = $prometheus::os,
   String $extra_options                                              = '',
   String $config_mode                                                = $prometheus::config_mode,
-  Optional[Variant[Stdlib::HTTPSUrl, Stdlib::HTTPUrl]] $download_url = undef,
+  Optional[Stdlib::Filesource] $download_url = undef,
   String $arch                                                       = $prometheus::real_arch,
   Stdlib::Absolutepath $bin_dir                                      = $prometheus::bin_dir,
 ) inherits prometheus {
