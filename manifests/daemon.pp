@@ -134,17 +134,6 @@ define prometheus::daemon (
       fail("The provided install method ${install_method} is invalid")
     }
   }
-  case $::operatingsystem {
-    'Amazon': {
-      file { '/usr/local/bin/node_exporter':
-        ensure  => link,
-        target  => '/opt/node_exporter-0.16.0.linux-amd64/node_exporter',
-        owner   => 'node-exporter',
-        group   => 'node-exporter',
-      }
-    }
-    default: {}
-  }
   if $manage_user {
     ensure_resource('user', [ $user ], {
       ensure => 'present',
