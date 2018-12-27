@@ -91,15 +91,4 @@ class prometheus::install {
     purge   => $prometheus::server::purge_config_dir,
     recurse => $prometheus::server::purge_config_dir,
   }
-  case $::operatingsystem {
-    'Amazon': {
-      file { '/usr/local/bin/node_exporter':
-        ensure  => 'link',
-        target  => '/opt/node_exporter-0.16.0.linux-amd64/node_exporter',
-        owner   => $prometheus::server::user,
-        group   => $prometheus::server::group,
-      }
-    }
-    default: {}
-  }
 }
