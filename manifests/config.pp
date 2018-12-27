@@ -71,7 +71,7 @@ class prometheus::config {
           content => template('prometheus/prometheus.systemd.erb'),
         }
       }
-      'sysv' : {
+      'sysv', 'redhat' : {
         file { '/etc/init.d/prometheus':
           mode    => '0555',
           owner   => 'root',
