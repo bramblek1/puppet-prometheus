@@ -94,10 +94,10 @@ class prometheus::install {
   case $::operatingsystem {
     'Amazon': {
       file { '/usr/local/bin/node_exporter':
-      ensure  => link,
-      target  => '/opt/node_exporter-0.16.0.linux-amd64/node_exporter',
-      owner   => $prometheus::server::user,
-      group   => $prometheus::server::group,
+        ensure  => 'link',
+        target  => '/opt/node_exporter-0.16.0.linux-amd64/node_exporter',
+        owner   => $prometheus::server::user,
+        group   => $prometheus::server::group,
       }
     }
     default: {}
