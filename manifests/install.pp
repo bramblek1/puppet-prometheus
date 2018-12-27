@@ -9,10 +9,11 @@ class prometheus::install {
 
   if $prometheus::server::localstorage {
     file { $prometheus::server::localstorage:
-      ensure => 'directory',
-      owner  => $prometheus::server::user,
-      group  => $prometheus::server::group,
-      mode   => '0755',
+      ensure  => 'directory',
+      recurse => true,
+      owner   => $prometheus::server::user,
+      group   => $prometheus::server::group,
+      mode    => 'ug+rwX',
     }
   }
   case $prometheus::server::install_method {

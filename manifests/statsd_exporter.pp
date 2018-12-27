@@ -82,7 +82,7 @@
 
 class prometheus::statsd_exporter (
   String $download_extension,
-  Variant[Stdlib::HTTPSUrl, Stdlib::HTTPUrl] $download_url_base,
+  Optional[Stdlib::Filesource] $download_url_base,
   Array $extra_groups,
   String $group,
   Stdlib::Absolutepath $mapping_config_path,
