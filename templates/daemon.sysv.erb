@@ -16,7 +16,9 @@ DAEMON=<%= @bin_dir %>/<%= @bin_name %>
 PID_FILE=/var/run/<%= @name %>/<%= @name %>.pid
 LOG_FILE=/var/log/<%= @name %>
 
+set -o allexport
 [ -e /etc/sysconfig/<%= @name %> ] && . /etc/sysconfig/<%= @name %>
+set +o allexport
 
 export GOMAXPROCS=${GOMAXPROCS:-2}
 

@@ -178,7 +178,7 @@ define prometheus::daemon (
           notify  => $notify_service,
         }
       }
-      'sysv' : {
+      'sysv', 'redhat' : {
         file { "/etc/init.d/${name}":
           mode    => '0555',
           owner   => 'root',
@@ -249,4 +249,5 @@ define prometheus::daemon (
       provider => $real_provider,
     }
   }
+
 }
