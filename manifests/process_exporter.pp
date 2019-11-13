@@ -71,7 +71,7 @@
 
 class prometheus::process_exporter(
   String $download_extension,
-  Variant[Stdlib::HTTPSUrl, Stdlib::HTTPUrl] $download_url_base,
+  Prometheus::Uri $download_url_base,
   Array $extra_groups,
   String $group,
   String $package_ensure,
@@ -79,31 +79,28 @@ class prometheus::process_exporter(
   String $user,
   String $version,
   Stdlib::Absolutepath $config_path,
-  Array $watched_processes                                           = [],
-  Boolean $purge_config_dir                                          = true,
-  Boolean $restart_on_change                                         = true,
-  Boolean $service_enable                                            = true,
-  String $service_ensure                                             = 'running',
-  String $init_style                                                 = $prometheus::init_style,
-  String $install_method                                             = $prometheus::install_method,
-  Boolean $manage_group                                              = true,
-  Boolean $manage_service                                            = true,
-  Boolean $manage_user                                               = true,
-  String $os                                                         = $prometheus::os,
-  String $extra_options                                              = '',
-  String $config_mode                                                = $prometheus::config_mode,
-  Optional[Variant[Stdlib::HTTPSUrl, Stdlib::HTTPUrl]] $download_url = undef,
-  String $arch                                                       = $prometheus::real_arch,
-  Stdlib::Absolutepath $bin_dir                                      = $prometheus::bin_dir,
+  Array $watched_processes                = [],
+  Boolean $purge_config_dir               = true,
+  Boolean $restart_on_change              = true,
+  Boolean $service_enable                 = true,
+  String $service_ensure                  = 'running',
+  String $init_style                      = $prometheus::init_style,
+  String $install_method                  = $prometheus::install_method,
+  Boolean $manage_group                   = true,
+  Boolean $manage_service                 = true,
+  Boolean $manage_user                    = true,
+  String $os                              = $prometheus::os,
+  String $extra_options                   = '',
+  String $config_mode                     = $prometheus::config_mode,
+  Optional[Prometheus::Uri] $download_url = undef,
+  String $arch                            = $prometheus::real_arch,
+  Stdlib::Absolutepath $bin_dir           = $prometheus::bin_dir,
+  Boolean $export_scrape_job              = false,
+  Stdlib::Port $scrape_port               = 9256,
+  String[1] $scrape_job_name              = 'process',
 ) inherits prometheus {
 
-  # Prometheus removed a dot on the realease name at 0.2.0
-  if versioncmp ($version, '0.2.0') >= 0 {
-    $filename = "${package_name}-${version}${os}_${arch}.${download_extension}"
-  }
-  else {
-    $filename = "${package_name}-${version}.${os}-${arch}.${download_extension}"
-  }
+  $filename = "${package_name}-${version}.${os}-${arch}.${download_extension}"
   $real_download_url = pick($download_url,"${download_url_base}/download/v${version}/${filename}")
   $notify_service = $restart_on_change ? {
     true    => Service['process-exporter'],
@@ -143,6 +140,8 @@ class prometheus::process_exporter(
     service_ensure     => $service_ensure,
     service_enable     => $service_enable,
     manage_service     => $manage_service,
+    export_scrape_job  => $export_scrape_job,
+    scrape_port        => $scrape_port,
+    scrape_job_name    => $scrape_job_name,
   }
-
 }

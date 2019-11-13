@@ -56,31 +56,40 @@
 #  [*manage_service*]
 #  Should puppet manage the service? (default true)
 #
+#  [*extract_command*]
+#  Custom command passed to the archive resource to extract the downloaded archive.
+#
 define prometheus::daemon (
   String $version,
-  Variant[Stdlib::HTTPSUrl, Stdlib::HTTPUrl] $real_download_url,
+  Prometheus::Uri $real_download_url,
   $notify_service,
-  String $user,
-  String $group,
-  String $install_method          = $prometheus::install_method,
-  String $download_extension      = $prometheus::download_extension,
-  String $os                      = $prometheus::os,
-  String $arch                    = $prometheus::real_arch,
-  Stdlib::Absolutepath $bin_dir   = $prometheus::bin_dir,
-  String $bin_name                = $name,
-  Optional[String] $package_name  = undef,
-  String $package_ensure          = 'installed',
-  Boolean $manage_user            = true,
-  Array $extra_groups             = [],
-  Boolean $manage_group           = true,
-  Boolean $purge                  = true,
-  String $options                 = '',
-  String $init_style              = $prometheus::init_style,
-  String $service_ensure          = 'running',
-  Boolean $service_enable         = true,
-  Boolean $manage_service         = true,
-  Hash[String, Scalar] $env_vars  = {},
-  Optional[String] $env_file_path = $prometheus::env_file_path,
+  String[1] $user,
+  String[1] $group,
+  String $install_method               = $prometheus::install_method,
+  String $download_extension           = $prometheus::download_extension,
+  String $os                           = $prometheus::os,
+  String $arch                         = $prometheus::real_arch,
+  Stdlib::Absolutepath $bin_dir        = $prometheus::bin_dir,
+  String $bin_name                     = $name,
+  Optional[String] $package_name       = undef,
+  String $package_ensure               = 'installed',
+  Boolean $manage_user                 = true,
+  Array $extra_groups                  = [],
+  Boolean $manage_group                = true,
+  Boolean $purge                       = true,
+  String $options                      = '',
+  String $init_style                   = $prometheus::init_style,
+  String $service_ensure               = 'running',
+  Boolean $service_enable              = true,
+  Boolean $manage_service              = true,
+  Hash[String, Scalar] $env_vars       = {},
+  Optional[String] $env_file_path      = $prometheus::env_file_path,
+  Optional[String[1]] $extract_command = $prometheus::extract_command,
+  Boolean $export_scrape_job           = false,
+  Stdlib::Host $scrape_host            = $facts['fqdn'],
+  Optional[Stdlib::Port] $scrape_port  = undef,
+  String[1] $scrape_job_name           = $name,
+  Stdlib::Absolutepath $usershell      = $prometheus::usershell,
 ) {
 
   case $install_method {
@@ -108,6 +117,7 @@ define prometheus::daemon (
           creates         => "/opt/${name}-${version}.${os}-${arch}/${name}",
           cleanup         => true,
           before          => File["/opt/${name}-${version}.${os}-${arch}/${name}"],
+          extract_command => $extract_command,
         }
       }
       file { "/opt/${name}-${version}.${os}-${arch}/${name}":
@@ -139,6 +149,7 @@ define prometheus::daemon (
       ensure => 'present',
       system => true,
       groups => $extra_groups,
+      shell  => $usershell,
     })
 
     if $manage_group {
@@ -153,70 +164,69 @@ define prometheus::daemon (
   }
 
 
-  if $init_style {
-    case $init_style {
-      'upstart' : {
-        file { "/etc/init/${name}.conf":
-          mode    => '0444',
-          owner   => 'root',
-          group   => 'root',
-          content => template('prometheus/daemon.upstart.erb'),
-          notify  => $notify_service,
-        }
-        file { "/etc/init.d/${name}":
-          ensure => link,
-          target => '/lib/init/upstart-job',
-          owner  => 'root',
-          group  => 'root',
-          mode   => '0755',
-        }
+  case $init_style {
+    'upstart' : {
+      file { "/etc/init/${name}.conf":
+        mode    => '0444',
+        owner   => 'root',
+        group   => 'root',
+        content => template('prometheus/daemon.upstart.erb'),
+        notify  => $notify_service,
       }
-      'systemd' : {
-        include 'systemd'
-        systemd::unit_file {"${name}.service":
-          content => template('prometheus/daemon.systemd.erb'),
-          notify  => $notify_service,
-        }
+      file { "/etc/init.d/${name}":
+        ensure => link,
+        target => '/lib/init/upstart-job',
+        owner  => 'root',
+        group  => 'root',
+        mode   => '0755',
       }
-      'sysv' : {
-        file { "/etc/init.d/${name}":
-          mode    => '0555',
-          owner   => 'root',
-          group   => 'root',
-          content => template('prometheus/daemon.sysv.erb'),
-          notify  => $notify_service,
-        }
+    }
+    'systemd' : {
+      include 'systemd'
+      systemd::unit_file {"${name}.service":
+        content => template('prometheus/daemon.systemd.erb'),
+        notify  => $notify_service,
       }
-      'debian' : {
-        file { "/etc/init.d/${name}":
-          mode    => '0555',
-          owner   => 'root',
-          group   => 'root',
-          content => template('prometheus/daemon.debian.erb'),
-          notify  => $notify_service,
-        }
+    }
+    # service_provider returns redhat on CentOS using sysv, https://tickets.puppetlabs.com/browse/PUP-5296
+    'sysv','redhat' : {
+      file { "/etc/init.d/${name}":
+        mode    => '0555',
+        owner   => 'root',
+        group   => 'root',
+        content => template('prometheus/daemon.sysv.erb'),
+        notify  => $notify_service,
       }
-      'sles' : {
-        file { "/etc/init.d/${name}":
-          mode    => '0555',
-          owner   => 'root',
-          group   => 'root',
-          content => template('prometheus/daemon.sles.erb'),
-          notify  => $notify_service,
-        }
+    }
+    'debian' : {
+      file { "/etc/init.d/${name}":
+        mode    => '0555',
+        owner   => 'root',
+        group   => 'root',
+        content => template('prometheus/daemon.debian.erb'),
+        notify  => $notify_service,
       }
-      'launchd' : {
-        file { "/Library/LaunchDaemons/io.${name}.daemon.plist":
-          mode    => '0644',
-          owner   => 'root',
-          group   => 'wheel',
-          content => template('prometheus/daemon.launchd.erb'),
-          notify  => $notify_service,
-        }
+    }
+    'sles' : {
+      file { "/etc/init.d/${name}":
+        mode    => '0555',
+        owner   => 'root',
+        group   => 'root',
+        content => template('prometheus/daemon.sles.erb'),
+        notify  => $notify_service,
       }
-      default : {
-        fail("I don't know how to create an init script for style ${init_style}")
+    }
+    'launchd' : {
+      file { "/Library/LaunchDaemons/io.${name}.daemon.plist":
+        mode    => '0644',
+        owner   => 'root',
+        group   => 'wheel',
+        content => template('prometheus/daemon.launchd.erb'),
+        notify  => $notify_service,
       }
+    }
+    default : {
+      fail("I don't know how to create an init script for style ${init_style}")
     }
   }
 
@@ -224,7 +234,7 @@ define prometheus::daemon (
     file { "${env_file_path}/${name}":
       mode    => '0644',
       owner   => 'root',
-      group   => 'root',
+      group   => '0', # Darwin uses wheel
       content => template('prometheus/daemon.env.erb'),
       notify  => $notify_service,
     }
@@ -247,6 +257,18 @@ define prometheus::daemon (
       name     => $init_selector,
       enable   => $service_enable,
       provider => $real_provider,
+    }
+  }
+
+  if $export_scrape_job {
+    if $scrape_port == undef {
+      fail('must set $scrape_port on exported daemon')
+    }
+
+    @@prometheus::scrape_job { "${scrape_host}:${scrape_port}":
+      job_name => $scrape_job_name,
+      targets  => ["${scrape_host}:${scrape_port}"],
+      labels   => { 'alias' => $scrape_host },
     }
   }
 }

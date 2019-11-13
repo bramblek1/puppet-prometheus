@@ -73,7 +73,7 @@
 #  The binary release version
 
 class prometheus::haproxy_exporter(
-  Variant[Stdlib::HTTPUrl, Stdlib::HTTPSUrl] $cnf_scrape_uri,
+  Variant[Stdlib::HTTPUrl, Pattern[/unix:(?:\/.+)+/]] $cnf_scrape_uri,
   String $download_extension,
   Array $extra_groups,
   String $group,
@@ -81,7 +81,7 @@ class prometheus::haproxy_exporter(
   String $package_name,
   String $user,
   String $version,
-  Variant[Stdlib::HTTPUrl, Stdlib::HTTPSUrl] $download_url_base,
+  Prometheus::Uri $download_url_base,
   Boolean $purge_config_dir      = true,
   Boolean $restart_on_change     = true,
   Boolean $service_enable        = true,
@@ -96,6 +96,9 @@ class prometheus::haproxy_exporter(
   Optional[String] $download_url = undef,
   String $arch                   = $prometheus::real_arch,
   Stdlib::Absolutepath $bin_dir  = $prometheus::bin_dir,
+  Boolean $export_scrape_job     = false,
+  Stdlib::Port $scrape_port      = 9101,
+  String[1] $scrape_job_name     = 'haproxy',
 ) inherits prometheus {
 
   $real_download_url = pick($download_url,"${download_url_base}/download/v${version}/${package_name}-${version}.${os}-${arch}.${download_extension}")
@@ -104,7 +107,7 @@ class prometheus::haproxy_exporter(
     default => undef,
   }
 
-  $options = "-haproxy.scrape-uri=\"${cnf_scrape_uri}\" ${extra_options}"
+  $options = "--haproxy.scrape-uri=\"${cnf_scrape_uri}\" ${extra_options}"
 
   prometheus::daemon { 'haproxy_exporter':
     install_method     => $install_method,
@@ -128,6 +131,9 @@ class prometheus::haproxy_exporter(
     service_ensure     => $service_ensure,
     service_enable     => $service_enable,
     manage_service     => $manage_service,
+    export_scrape_job  => $export_scrape_job,
+    scrape_port        => $scrape_port,
+    scrape_job_name    => $scrape_job_name,
   }
 
 }

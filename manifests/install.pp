@@ -25,6 +25,7 @@ class prometheus::install {
         checksum_verify => false,
         creates         => "/opt/prometheus-${prometheus::server::version}.${prometheus::server::os}-${prometheus::server::real_arch}/prometheus",
         cleanup         => true,
+        extract_command => $prometheus::extract_command,
       }
       -> file {
         "/opt/prometheus-${prometheus::server::version}.${prometheus::server::os}-${prometheus::server::real_arch}/prometheus":
@@ -71,6 +72,7 @@ class prometheus::install {
       ensure => 'present',
       system => true,
       groups => $prometheus::server::extra_groups,
+      shell  => $prometheus::server::usershell,
     })
 
     if $prometheus::server::manage_group {
@@ -85,7 +87,7 @@ class prometheus::install {
   }
   file { $prometheus::server::config_dir:
     ensure  => 'directory',
-    owner   => $prometheus::server::user,
+    owner   => 'root',
     group   => $prometheus::server::group,
     purge   => $prometheus::server::purge_config_dir,
     recurse => $prometheus::server::purge_config_dir,

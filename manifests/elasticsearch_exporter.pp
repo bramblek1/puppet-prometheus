@@ -77,6 +77,11 @@
 #
 #  [*version*]
 #  The binary release version
+#
+#  [*use_kingpin*]
+#  Since version 1.1.0, the elasticsearch exporter uses kingpin, thus
+#  this param to define how we call the es.uri and es.timeout in the $options
+#  https://github.com/justwatchcom/elasticsearch_exporter/blob/v1.1.0/CHANGELOG.md
 
 class prometheus::elasticsearch_exporter (
   String $cnf_uri,
@@ -89,6 +94,7 @@ class prometheus::elasticsearch_exporter (
   String $package_name,
   String $user,
   String $version,
+  Boolean $use_kingpin,
   Boolean $purge_config_dir      = true,
   Boolean $restart_on_change     = true,
   Boolean $service_enable        = true,
@@ -103,6 +109,9 @@ class prometheus::elasticsearch_exporter (
   Optional[String] $download_url = undef,
   String $arch                   = $prometheus::real_arch,
   String $bin_dir                = $prometheus::bin_dir,
+  Boolean $export_scrape_job     = false,
+  Stdlib::Port $scrape_port      = 9114,
+  String[1] $scrape_job_name     = 'elasticsearch',
 ) inherits prometheus {
 
   #Please provide the download_url for versions < 0.9.0
@@ -113,7 +122,12 @@ class prometheus::elasticsearch_exporter (
     default => undef,
   }
 
-  $options = "-es.uri=${cnf_uri} -es.timeout=${cnf_timeout} ${extra_options}"
+  $flag_prefix = $use_kingpin ? {
+    true  => '--',
+    false => '-',
+  }
+
+  $options = "${flag_prefix}es.uri=${cnf_uri} ${flag_prefix}es.timeout=${cnf_timeout} ${extra_options}"
 
   prometheus::daemon { 'elasticsearch_exporter':
     install_method     => $install_method,
@@ -137,5 +151,8 @@ class prometheus::elasticsearch_exporter (
     service_ensure     => $service_ensure,
     service_enable     => $service_enable,
     manage_service     => $manage_service,
+    export_scrape_job  => $export_scrape_job,
+    scrape_port        => $scrape_port,
+    scrape_job_name    => $scrape_job_name,
   }
 }

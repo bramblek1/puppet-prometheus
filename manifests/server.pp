@@ -9,7 +9,7 @@ class prometheus::server (
   Stdlib::Absolutepath $shared_dir                                              = $prometheus::shared_dir,
   String $version                                                               = $prometheus::version,
   String $install_method                                                        = $prometheus::install_method,
-  Variant[Stdlib::HTTPUrl, Stdlib::HTTPSUrl] $download_url_base                 = $prometheus::download_url_base,
+  Prometheus::Uri $download_url_base                                            = $prometheus::download_url_base,
   String $download_extension                                                    = $prometheus::download_extension,
   String $package_name                                                          = $prometheus::package_name,
   String $package_ensure                                                        = $prometheus::package_ensure,
@@ -33,7 +33,7 @@ class prometheus::server (
   Boolean $manage_service                                                       = $prometheus::manage_service,
   Boolean $restart_on_change                                                    = $prometheus::restart_on_change,
   String $init_style                                                            = $prometheus::init_style,
-  String $extra_options                                                         = $prometheus::extra_options,
+  Optional[String[1]] $extra_options                                            = $prometheus::extra_options,
   Hash $config_hash                                                             = $prometheus::config_hash,
   Hash $config_defaults                                                         = $prometheus::config_defaults,
   String $os                                                                    = $prometheus::os,
@@ -42,7 +42,10 @@ class prometheus::server (
   Boolean $manage_group                                                         = $prometheus::manage_group,
   Boolean $purge_config_dir                                                     = $prometheus::purge_config_dir,
   Boolean $manage_user                                                          = $prometheus::manage_user,
+  Boolean $manage_config                                                        = $prometheus::manage_config,
   Optional[Variant[Stdlib::HTTPurl, Stdlib::Unixpath, String[1]]] $external_url = $prometheus::external_url,
+  Optional[Array[Hash[String[1], Any]]] $collect_scrape_jobs                    = $prometheus::collect_scrape_jobs,
+  Stdlib::Absolutepath $usershell                                               = $prometheus::usershell,
 ) inherits prometheus {
 
   if( versioncmp($version, '1.0.0') == -1 ){
@@ -61,7 +64,7 @@ class prometheus::server (
 
   file { "${config_dir}/rules":
     ensure => 'directory',
-    owner  => $user,
+    owner  => 'root',
     group  => $group,
     mode   => $config_mode,
   }

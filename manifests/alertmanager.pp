@@ -132,7 +132,7 @@ class prometheus::alertmanager (
   Stdlib::Absolutepath $config_dir,
   Stdlib::Absolutepath $config_file,
   String $download_extension,
-  Variant[Stdlib::HTTPUrl, Stdlib::HTTPSUrl] $download_url_base,
+  Prometheus::Uri $download_url_base,
   Array $extra_groups,
   Hash $global,
   String $group,
@@ -150,6 +150,7 @@ class prometheus::alertmanager (
   String $service_name           = 'alertmanager',
   Boolean $restart_on_change     = true,
   Boolean $purge_config_dir      = true,
+  Boolean $manage_config         = true,
   String $init_style             = $prometheus::init_style,
   String $install_method         = $prometheus::install_method,
   Boolean $manage_group          = true,
@@ -177,20 +178,44 @@ class prometheus::alertmanager (
 
   file { $config_dir:
     ensure  => 'directory',
-    owner   => $user,
+    owner   => 'root',
     group   => $group,
     purge   => $purge_config_dir,
     recurse => $purge_config_dir,
   }
 
-  file { $config_file:
-    ensure  => present,
-    owner   => $user,
-    group   => $group,
-    mode    => $config_mode,
-    content => template('prometheus/alertmanager.yaml.erb'),
-    notify  => $notify_service,
-    require => File[$config_dir],
+  if (( versioncmp($version, '0.10.0') >= 0 ) and ( $install_method == 'url' )) {
+    # If version >= 0.10.0 then install amtool - Alertmanager validation tool
+    file {"${bin_dir}/amtool":
+      ensure => link,
+      target => "/opt/${package_name}-${version}.${os}-${arch}/amtool",
+    }
+
+    if $manage_config {
+      file { $config_file:
+        ensure       => present,
+        owner        => 'root',
+        group        => $group,
+        mode         => $config_mode,
+        content      => template('prometheus/alertmanager.yaml.erb'),
+        notify       => $notify_service,
+        require      => File["${bin_dir}/amtool", $config_dir],
+        validate_cmd => "${bin_dir}/amtool check-config --alertmanager.url='' %",
+      }
+    }
+  } else {
+
+    if $manage_config {
+      file { $config_file:
+        ensure  => present,
+        owner   => 'root',
+        group   => $group,
+        mode    => $config_mode,
+        content => template('prometheus/alertmanager.yaml.erb'),
+        notify  => $notify_service,
+        require => File[$config_dir],
+      }
+    }
   }
 
   if $facts['prometheus_alert_manager_running'] == 'running' {
