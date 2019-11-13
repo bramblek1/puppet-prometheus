@@ -186,6 +186,14 @@ define prometheus::daemon (
       systemd::unit_file {"${name}.service":
         content => template('prometheus/daemon.systemd.erb'),
         notify  => $notify_service,
+    }
+    'sysv', 'redhat' : {
+      file { "/etc/init.d/${name}":
+        mode    => '0555',
+        owner   => 'root',
+        group   => 'root',
+        content => template('prometheus/daemon.sysv.erb'),
+        notify  => $notify_service,
       }
     }
     # service_provider returns redhat on CentOS using sysv, https://tickets.puppetlabs.com/browse/PUP-5296
